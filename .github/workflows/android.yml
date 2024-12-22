@@ -1,4 +1,4 @@
-name: Android Build and Test
+name: Maven Android Build and Test
 
 on:
   push:
@@ -25,27 +25,31 @@ jobs:
           distribution: 'zulu'
           java-version: '8'
 
-      # Cache Gradle dependencies
-      - name: Cache Gradle Dependencies
+      # Install Android SDK
+      - name: Install Android SDK
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y openjdk-8-jdk
+          yes | sdkmanager --licenses
+          sdkmanager "platforms;android-30" "build-tools;30.0.3"
+
+      # Cache Maven dependencies
+      - name: Cache Maven Dependencies
         uses: actions/cache@v3
         with:
-          path: ~/.gradle/caches
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
-            ${{ runner.os }}-gradle-
+            ${{ runner.os }}-maven-
 
-      # Download Gradle Wrapper
-      - name: Set up Gradle Wrapper
-        run: ./gradlew wrapper --gradle-version=7.5
-
-      # Build the project
+      # Build with Maven
       - name: Build Project
-        run: ./gradlew build
+        run: mvn clean install
 
       # Run Unit Tests
       - name: Run Unit Tests
-        run: ./gradlew test
+        run: mvn test
 
-      # Run Instrumentation Tests
+      # Run Integration Tests
       - name: Run Instrumentation Tests
-        run: ./gradlew connectedCheck
+        run: mvn android:instrument
